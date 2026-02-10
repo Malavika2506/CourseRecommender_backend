@@ -1,7 +1,9 @@
+//backend/routes/resultRoutes.js
 import express from "express";
 import Question from "../models/Question.js";
 import Result from "../models/Result.js";
 import authMiddleware from "../middleware/authMiddleware.js";
+import Student from "../models/Student.js";
 
 const router = express.Router();
 
@@ -34,18 +36,46 @@ router.post("/submit", authMiddleware, async (req, res) => {
     scores[a] > scores[b] ? a : b
   );
 
-  const result = await Result.create({
+  // 🔹 Save result
+await Result.findOneAndUpdate(
+  { studentId },
+  {
     studentId,
     scores,
     recommended: bestCourseKey,
-  });
+    details: courseDetails[bestCourseKey], // 👈 add details
+  },
+  { upsert: true, new: true }
+);
 
-  res.json(result);
+
+  // 🔹 Save / update student (THIS MAKES ADMIN LIST WORK)
+  await Student.findOneAndUpdate(
+    { email: req.user.email },
+    {
+      name: req.user.name,
+      email: req.user.email,
+      answers,
+      scores,
+      bestCourse: bestCourseKey,
+    },
+    { upsert: true }
+  );
+
+  res.json({ recommended: bestCourseKey });
 });
+
 
 router.get("/me", authMiddleware, async (req, res) => {
-  const result = await Result.findOne({ studentId: req.user.id });
+  const result = await Result.findOne({ studentId: req.user.id })
+    .sort({ updatedAt: -1 });
+
+  if (!result) {
+    return res.status(404).json({ message: "No result found" });
+  }
+
   res.json(result);
 });
+
 
 export default router;
