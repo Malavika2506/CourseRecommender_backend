@@ -3,7 +3,12 @@ import mongoose from "mongoose";
 
 const ResultSchema = new mongoose.Schema(
   {
-    studentId: { type: String, required: true },
+studentId: { 
+  type: mongoose.Schema.Types.ObjectId, 
+  ref: "User",  
+  required: true 
+},
+
     scores: { type: Object, required: true },
     recommended: { type: String, required: true },
     details: { type: String },

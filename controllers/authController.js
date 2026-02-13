@@ -36,12 +36,15 @@ export const login = async (req, res) => {
 
 const token = jwt.sign(
   {
-    id: user._id,
-    role: user.role,   // 🔥 REQUIRED for adminMiddleware
+    _id: user._id,      // change id → _id
+    role: user.role,
+    name: user.name,
+    email: user.email,
   },
   process.env.JWT_SECRET,
   { expiresIn: "1d" }
 );
+
 
 
   res
