@@ -95,16 +95,26 @@ router.post("/submit", authMiddleware, async (req, res) => {
     };
 
     questions.forEach((q, index) => {
-      if (answers[index] === true) {
-        Object.entries(q.points).forEach(([course, value]) => {
-          scores[course] += value;
-        });
+if (answers[index] === true && q.points) {
+      Object.keys(scores).forEach((course) => {
+  scores[course] += q.points[course] || 0;
+});
+
       }
     });
 
-    const bestCourseKey = Object.keys(scores).reduce((a, b) =>
-      scores[a] > scores[b] ? a : b,
-    );
+ // Find highest score
+const maxScore = Math.max(...Object.values(scores));
+
+// Find all courses with same highest score
+const topCourses = Object.keys(scores).filter(
+  (key) => scores[key] === maxScore
+);
+
+// Randomly select one if tie
+const bestCourseKey =
+  topCourses[Math.floor(Math.random() * topCourses.length)];
+
 
     await Result.findOneAndUpdate(
       { studentId },
