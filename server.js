@@ -29,6 +29,7 @@ import questionRoutes from "./routes/questionRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
 import studentRoutes from "./routes/students.js";
 import userRoutes from "./routes/userRoutes.js";
+import courseRoutes from "./routes/courseRoutes.js";
 
 
 dotenv.config();
@@ -51,6 +52,8 @@ app.use("/api/questions", questionRoutes);
 app.use("/api/result", resultRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/courses", courseRoutes);
+
 
 
 /* -------- HEALTH CHECK -------- */

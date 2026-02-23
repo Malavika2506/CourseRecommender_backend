@@ -5,10 +5,20 @@ import Question from "../models/Question.js";
 const router = express.Router();
 
 // GET all questions
+// router.get("/", async (req, res) => {
+//   const questions = await Question.find();
+//   res.json(questions);
+// });
+
 router.get("/", async (req, res) => {
-  const questions = await Question.find();
-  res.json(questions);
+  try {
+    const questions = await Question.find().populate("course");
+    res.json(questions);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
+
 
 // ADD question
 router.post("/", async (req, res) => {
