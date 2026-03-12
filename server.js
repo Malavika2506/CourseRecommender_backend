@@ -1,20 +1,4 @@
-// import express from "express";
-// import cors from "cors";
-// import dotenv from "dotenv";
-// import connectDB from "./config/db.js";
-// import authRoutes from "./routes/authRoutes.js";
-
-// dotenv.config();
-// connectDB();
-
-// const app = express();
-// app.use(cors());
-// app.use(express.json());
-
-// app.use("/api/auth", authRoutes);
-
-// app.listen(5000, () => console.log("Server running on port 5000"));
-
+//backend/server.js
 
 import express from "express";
 import cors from "cors";
@@ -30,6 +14,7 @@ import resultRoutes from "./routes/resultRoutes.js";
 import studentRoutes from "./routes/students.js";
 import userRoutes from "./routes/userRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
+import analyticsRoutes from "./routes/analytics.js";
 
 
 dotenv.config();
@@ -38,10 +23,12 @@ connectDB();
 const app = express();
 
 /* -------- MIDDLEWARE -------- */
+
 app.use(cors({
-  origin: "http://localhost:5173", 
+  origin: ["http://localhost:5173", "http://localhost:5174"],
   credentials: true
 }));
+
 
 app.use(express.json());
 app.use(cookieParser());
@@ -53,6 +40,9 @@ app.use("/api/result", resultRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/courses", courseRoutes);
+app.use("/api/analytics", analyticsRoutes);
+
+
 
 
 

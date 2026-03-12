@@ -1,81 +1,17 @@
-//backend/routes/resultRoutes.js
+// //backend/routes/resultRoutes.js
 import express from "express";
 import Question from "../models/Question.js";
 import Result from "../models/Result.js";
+import Course from "../models/Course.js";
 import authMiddleware from "../middleware/authMiddleware.js";
-import Student from "../models/Student.js";
+import { getRecentActivity } from "../controllers/resultController.js";
 
 const router = express.Router();
-const courseDetails = {
-  mern: "Full stack development using MongoDB, Express, React, and Node.js.",
-  flutter: "Cross-platform mobile app development using Flutter.",
-  datasci: "Data analysis, visualization, and machine learning foundations.",
-  cybersecurity: "Security fundamentals, networks, and ethical hacking.",
-  react: "Frontend development with React ecosystem.",
-  pythonfs: "Backend development using Python and frameworks.",
-  uiux: "User interface and user experience design principles.",
-  devops: "CI/CD, cloud, containers, and deployment automation.",
-};
 
-// router.post("/submit", authMiddleware, async (req, res) => {
-//   // const studentId = req.user.id;
-//   const studentId = req.user._id.toString();
+/* -------- RECENT ACTIVITY (ADMIN DASHBOARD) -------- */
+router.get("/activity", getRecentActivity);
 
-//   const { answers } = req.body;
-
-//   const questions = await Question.find().sort({ _id: 1 });
-
-//   const scores = {
-//     mern: 0,
-//     flutter: 0,
-//     datasci: 0,
-//     cybersecurity: 0,
-//     react: 0,
-//     pythonfs: 0,
-//     uiux: 0,
-//     devops: 0,
-//   };
-
-//   questions.forEach((q, index) => {
-//     if (answers[index] === "yes") {
-//       Object.entries(q.points).forEach(([course, value]) => {
-//         scores[course] += value;
-//       });
-//     }
-//   });
-
-//   const bestCourseKey = Object.keys(scores).reduce((a, b) =>
-//     scores[a] > scores[b] ? a : b,
-//   );
-
-//   // 🔹 Save result
-//   await Result.findOneAndUpdate(
-//     { studentId },
-//     {
-//       studentId,
-//       scores,
-//       recommended: bestCourseKey,
-//       details: courseDetails[bestCourseKey], // 👈 add details
-//     },
-//     { upsert: true, new: true },
-//   );
-
-//   // 🔹 Save / update student (THIS MAKES ADMIN LIST WORK)
-//   await Student.findOneAndUpdate(
-//     { email: req.user.email },
-//     {
-//       name: req.user.name,
-//       email: req.user.email,
-//       answers,
-//       scores,
-//       bestCourse: bestCourseKey,
-//     },
-//     { upsert: true },
-//   );
-
-//   res.json({ recommended: bestCourseKey });
-// });
-
+/* -------- SUBMIT QUIZ -------- */
 router.post("/submit", authMiddleware, async (req, res) => {
   try {
     const studentId = req.user._id;
@@ -83,79 +19,74 @@ router.post("/submit", authMiddleware, async (req, res) => {
 
     const questions = await Question.find().sort({ _id: 1 });
 
-    const scores = {
-      mern: 0,
-      flutter: 0,
-      datasci: 0,
-      cybersecurity: 0,
-      react: 0,
-      pythonfs: 0,
-      uiux: 0,
-      devops: 0,
-    };
+    const scores = {};
 
     questions.forEach((q, index) => {
-if (answers[index] === true && q.points) {
-      Object.keys(scores).forEach((course) => {
-  scores[course] += q.points[course] || 0;
-});
-
+      if (answers[index] === true) {
+        q.courses.forEach((courseId) => {
+          scores[courseId] = (scores[courseId] || 0) + 1;
+        });
       }
     });
 
- // Find highest score
-const maxScore = Math.max(...Object.values(scores));
+    let bestCourseId = null;
+    let maxScore = -1;
 
-// Find all courses with same highest score
-const topCourses = Object.keys(scores).filter(
-  (key) => scores[key] === maxScore
-);
+    Object.keys(scores).forEach((courseId) => {
+      if (scores[courseId] > maxScore) {
+        maxScore = scores[courseId];
+        bestCourseId = courseId;
+      }
+    });
 
-// Randomly select one if tie
-const bestCourseKey =
-  topCourses[Math.floor(Math.random() * topCourses.length)];
+    const course = await Course.findById(bestCourseId);
 
+    if (!course) {
+      return res.status(404).json({
+        message: "Course not found in database",
+      });
+    }
 
-    await Result.findOneAndUpdate(
+    const result = await Result.findOneAndUpdate(
       { studentId },
       {
         studentId,
         scores,
-        recommended: bestCourseKey,
-        details: courseDetails[bestCourseKey],
+        recommendedCourse: course._id,
       },
-      { upsert: true, new: true },
+      { upsert: true, new: true }
     );
 
-    await Student.findOneAndUpdate(
-      { email: req.user.email },
-      {
-        name: req.user.name,
-        email: req.user.email,
-        answers,
-        scores,
-        bestCourse: bestCourseKey,
-      },
-      { upsert: true },
-    );
+    res.json({
+      success: true,
+      result,
+    });
 
-    res.json({ recommended: bestCourseKey });
   } catch (error) {
     console.error("Submit Error:", error);
     res.status(500).json({ message: "Server Error" });
   }
 });
 
+/* -------- GET STUDENT RESULT -------- */
 router.get("/me", authMiddleware, async (req, res) => {
-  const result = await Result.findOne({
-    studentId: req.user._id,
-  }).sort({ updatedAt: -1 });
+  try {
+    const result = await Result.findOne({
+      studentId: req.user._id,
+    }).populate("recommendedCourse");
 
-  if (!result) {
-    return res.status(404).json({ message: "No result found" });
+    if (!result) {
+      return res.status(404).json({
+        message: "No result found",
+      });
+    }
+
+    res.json(result);
+
+  } catch (error) {
+    console.error("Result Fetch Error:", error);
+    res.status(500).json({ message: "Server Error" });
   }
-
-  res.json(result);
 });
 
 export default router;

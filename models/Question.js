@@ -18,12 +18,13 @@ const QuestionSchema = new mongoose.Schema({
     devops: { type: Number, default: 0 },
   },
 
-  // ✅ ADD THIS
-  course: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Course",
-    required: true,
-  },
+  // ✅ Multiple courses
+  courses: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Course",
+    },
+  ],
 
 }, { timestamps: true });
 

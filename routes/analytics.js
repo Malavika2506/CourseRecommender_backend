@@ -1,18 +1,30 @@
-//backend/routes/analytics.js
+// //backend/routes/analytics.js
 import express from "express";
-import Student from "../models/Student.js";
+import Result from "../models/Result.js";
+import Course from "../models/Course.js";
 
 const router = express.Router();
 
 router.get("/courses", async (req, res) => {
-  const students = await Student.find();
+  try {
+    const results = await Result.find().populate("recommendedCourse");
 
-  const counts = {};
-  students.forEach(s => {
-    counts[s.bestCourse] = (counts[s.bestCourse] || 0) + 1;
-  });
+    const counts = {};
 
-  res.json(counts);
+    results.forEach((r) => {
+      const courseName = r.recommendedCourse?.name;
+
+      if (courseName) {
+        counts[courseName] = (counts[courseName] || 0) + 1;
+      }
+    });
+
+    res.json(counts);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Analytics error" });
+  }
 });
 
 export default router;
